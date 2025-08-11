@@ -1,0 +1,83 @@
+To write a new target for PyRIT (Python Red Teaming for LLMs), you're essentially adding a new interface or system where prompts (payloads) will be sent. This could be a local LLM, a cloud API, a wrapper around a hosted model, or a specific deployment scenario like an app interface.
+
+Step-by-Step Guide to Write a New Target for PyRIT
+1. Understand the Target Interface
+PyRIT targets must implement the BaseTarget interface.
+
+You can find this in:
+
+pyrit/targets/base_target.py
+At minimum, your new target must implement:
+
+
+class BaseTarget:
+    def __init__(self, config: dict):
+        ...
+
+    def query(self, prompt: str) -> str:
+        """
+        Sends a prompt to the model and returns the output.
+        """
+        raise NotImplementedError
+2. Create a New Python File for Your Target
+Example: pyrit/targets/my_new_target.py
+
+
+from pyrit.targets.base_target import BaseTarget
+
+class MyNewTarget(BaseTarget):
+    def __init__(self, config):
+        self.api_url = config.get("api_url")
+        self.headers = {"Authorization": f"Bearer {config.get('api_key')}"}
+    
+    def query(self, prompt: str) -> str:
+        import requests
+        payload = {"prompt": prompt}
+        response = requests.post(self.api_url, headers=self.headers, json=payload)
+        return response.json().get("response", "")
+3. Update __init__.py to Register Your Target
+In pyrit/targets/__init__.py, import your new target and map it:
+
+
+from .my_new_target import MyNewTarget
+
+TARGETS = {
+    "my_new_target": MyNewTarget,
+    # other targets...
+}
+This allows PyRIT to discover and use your new target via YAML config.
+
+4. Configure It in a YAML File
+Example: configs/targets/my_new_target.yaml
+
+
+name: my_new_target
+config:
+  api_url: "https://api.myhostedllm.com/generate"
+  api_key: "sk-xxxx"
+5. Run PyRIT With Your Target
+Example command:
+
+
+pyrit run --target-config configs/targets/my_new_target.yaml --attack-config configs/attacks/jailbreak.yaml
+Optional: Add Features
+Logging: Add logging to monitor requests/responses.
+
+Retry Logic: Handle API timeouts or rate-limiting.
+
+Streaming Support: If your target supports streaming output.
+
+Tips
+Look at existing targets for inspiration, such as:
+
+openai_target.py
+
+local_target.py
+
+huggingface_target.py
+
+These are good references inside pyrit/targets/.
+
+Keep your dependencies minimal. Use requests, not complex frameworks.
+
+Validate your output to avoid breaking the red teaming flow.
