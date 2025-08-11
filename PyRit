@@ -1,83 +1,61 @@
-To write a new target for PyRIT (Python Red Teaming for LLMs), you're essentially adding a new interface or system where prompts (payloads) will be sent. This could be a local LLM, a cloud API, a wrapper around a hosted model, or a specific deployment scenario like an app interface.
+1. Understand the Target Types
+PyRIT distinguishes between:
 
-Step-by-Step Guide to Write a New Target for PyRIT
-1. Understand the Target Interface
-PyRIT targets must implement the BaseTarget interface.
+PromptTarget: A general endpoint for sending prompts.
 
-You can find this in:
+PromptChatTarget: A subclass that supports conversation history, system messages, etc.
+azure.github.io
 
-pyrit/targets/base_target.py
-At minimum, your new target must implement:
+Depending on whether your target is conversational (like a chat API) or one-off (like a simple HTTP endpoint), you’ll choose the appropriate base.
 
+2. Review the Official Documentation
+In the “Creating Custom Targets” section of PyRIT’s docs, there’s a tutorial demonstrating how to connect to "Gandalf" and "Crucible" targets. These examples show how to write your own target that plugs into PyRIT's orchestrators and scorers—definitely worth checking out!
+azure.github.io
 
-class BaseTarget:
-    def __init__(self, config: dict):
-        ...
+3. Walkthrough: Building Your Own Target
+A) Choose a base class
+If you’re sending a conversation-like prompt (e.g., to an LLM), use PromptChatTarget. Otherwise, for a simpler HTTP API, start with PromptTarget or perhaps HTTPTarget if available.
 
-    def query(self, prompt: str) -> str:
-        """
-        Sends a prompt to the model and returns the output.
-        """
+B) Subclass and Implement
+Here’s a basic pattern for a chat-style custom target:
+
+python
+from pyrit.prompt_target import PromptChatTarget
+
+class MyCustomTarget(PromptChatTarget):
+    def __init__(self, my_param1, my_param2):
+        super().__init__()
+        self.param1 = my_param1
+        self.param2 = my_param2
+
+    async def send_prompt_async(self, *, prompt_request):
+        # Your logic for dispatching prompts and returning a response
+        # For example:
+        #   result = await my_api.call(prompt=prompt_request.prompt, history=prompt_request.history)
+        #   return prompt_request.with_response(result)
         raise NotImplementedError
-2. Create a New Python File for Your Target
-Example: pyrit/targets/my_new_target.py
+Even if PyRIT doesn’t require registration via an explicit registry file, using an importable class like this lets you plug it into orchestrators or attacks just like the built-in targets.
 
+4. Use It in Your Workflow
+Once your custom target is defined, you can pass it into an orchestrator or attack class:
 
-from pyrit.targets.base_target import BaseTarget
+python
+from pyrit.orchestrator import RedTeamingOrchestrator
+# or PromptSendingAttack, depending on your use case
 
-class MyNewTarget(BaseTarget):
-    def __init__(self, config):
-        self.api_url = config.get("api_url")
-        self.headers = {"Authorization": f"Bearer {config.get('api_key')}"}
-    
-    def query(self, prompt: str) -> str:
-        import requests
-        payload = {"prompt": prompt}
-        response = requests.post(self.api_url, headers=self.headers, json=payload)
-        return response.json().get("response", "")
-3. Update __init__.py to Register Your Target
-In pyrit/targets/__init__.py, import your new target and map it:
+my_target = MyCustomTarget(param1="x", param2="y")
 
+orchestrator = RedTeamingOrchestrator(
+    objective_target=my_target,
+    adversarial_chat=...,
+    objective_scorer=...,
+    adversarial_chat_seed_prompt="..."
+)
 
-from .my_new_target import MyNewTarget
+result = await orchestrator.run_attack_async(objective="Your goal here")
+await result.print_conversation_async()
+This mirrors how the documentation shows connecting "GandalfTarget" and using built-in orchestrators.
+azure.github.io
 
-TARGETS = {
-    "my_new_target": MyNewTarget,
-    # other targets...
-}
-This allows PyRIT to discover and use your new target via YAML config.
-
-4. Configure It in a YAML File
-Example: configs/targets/my_new_target.yaml
-
-
-name: my_new_target
-config:
-  api_url: "https://api.myhostedllm.com/generate"
-  api_key: "sk-xxxx"
-5. Run PyRIT With Your Target
-Example command:
-
-
-pyrit run --target-config configs/targets/my_new_target.yaml --attack-config configs/attacks/jailbreak.yaml
-Optional: Add Features
-Logging: Add logging to monitor requests/responses.
-
-Retry Logic: Handle API timeouts or rate-limiting.
-
-Streaming Support: If your target supports streaming output.
-
-Tips
-Look at existing targets for inspiration, such as:
-
-openai_target.py
-
-local_target.py
-
-huggingface_target.py
-
-These are good references inside pyrit/targets/.
-
-Keep your dependencies minimal. Use requests, not complex frameworks.
-
-Validate your output to avoid breaking the red teaming flow.
+5. Tip: HTTPTarget for Flexibility
+If your target is a generic API endpoint, consider using or extending HTTPTarget, which facilitates custom HTTP requests. It's especially useful if you need lower-level control (e.g., custom headers, proxies).
