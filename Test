@@ -1,0 +1,75 @@
+def preprocess(data_trend, train_ratio, n_past):
+    
+    scaler = StandardScaler() 
+    data_trend = scaler.fit_transform(data_trend)
+    
+    train_ind = int(len(data_trend)*train_ratio)
+    train_data = data_trend[:train_ind]
+    val_data = data_trend[train_ind:]
+
+    # convert our train data into a pytorch tensor
+    X_train, Y_train = create_sequences(train_data, n_past)
+    X_val, Y_val = create_sequences(val_data, n_past)
+
+    return X_train, Y_train, X_val, Y_val, scaler
+
+
+def create_sequences(data, n_past):
+    X,Y = [],[]
+    L = len(data)
+    for i in range(L-(n_past+5)):
+        X.append(data[i:i+n_past])
+        Y.append(data[i+n_past:i+n_past+5][:,3])
+    
+    return torch.Tensor(np.array(X)), torch.Tensor(np.array(Y))
+
+data = df[[c for c in df.columns if c not in ['Date','Adj Close']]].values
+X_train, Y_train, X_val, Y_val, scaler = preprocess(data, train_ratio, n_past)
+
+batch_size = 32
+train_set = torch.utils.data.TensorDataset(X_train, Y_train)
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False)
+
+val_set = torch.utils.data.TensorDataset(X_val, Y_val)
+val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size, shuffle=False)
+
+class LSTM(nn.Module):
+    def __init__(self, n_features, hidden_dim):
+        super(LSTM, self).__init__()
+        self.n_features = n_features
+        self.hidden_dim = hidden_dim
+        
+        self.lstm = nn.LSTM(input_size=self.n_features, hidden_size=self.hidden_dim, 
+                            num_layers=2, bidirectional=False, batch_first=True, dropout=0.2)
+        self.linear = nn.Linear(self.hidden_dim, 5)
+        
+    def forward(self, x): 
+        x, _ = self.lstm(x)
+        x = self.linear(x[:,-1,:]) 
+        
+        return x
+
+model = LSTM(5, 128)
+model
+
+close_price_true, close_price_pred = [], []
+for i in range(len(val_set)):
+    x,y = val_set[i]
+    x = torch.unsqueeze(x,0)
+    y = torch.unsqueeze(y,0)
+    pred = model(x.to(device))
+    
+    np_output = pred.detach().numpy()[0]
+    np_target = y[0][0].item()
+    np_output = np.sqrt(scaler.var_[3])*np_output + scaler.mean_[3] #dim=3為close price的
+    np_target = np.sqrt(scaler.var_[3])*np_target + scaler.mean_[3]
+    
+    close_price_true.append(np_target)
+    close_price_pred.append(np_output[0])
+ 
+mape = np.mean(np.absolute(np.array(close_price_true) - np.array(close_price_pred))/np.array(close_price_true))
+mae =  np.mean( np.absolute(np.array(close_price_true) - np.array(close_price_pred)))
+plt.plot(close_price_true)
+plt.plot(close_price_pred)
+plt.title('MAE:{:.3f}, MAPE:{:.3f}'.format(mae, mape))
+plt.legend(['true', 'predict'])
