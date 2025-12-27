@@ -65,4 +65,3 @@ With MCP → You define a server exposing only specific, read-only queries. The 
 
 In Conclusion
 MCP strengthens data security in LLM applications by introducing controlled, explicit, auditable interfaces for data and tool access. It prevents models from having free-form access to sensitive systems and helps mitigate risks like prompt injection, data leaks, and unauthorized actions.
-https://docs.google.com/spreadsheets/d/1zKC79LKscCAegWhBEDx8exesYD3IibuI-AiU-lLbzc8/edit?usp=sharing
