@@ -1,0 +1,126 @@
+User Input
+   ↓
+Input Agent
+   ↓
+Data Processing
+   ↓
+Metrics Computation
+   ↓
+Trend Analysis
+   ↓
+Benchmarking
+   ↓
+Insight Generation (LLM)
+   ↓
+Risk Assessment
+   ↓
+Report Generation
+   ↓
+Visualization
+   ↓
+Final Output
+
+
+1. Input Collection Layer
+Goal: Gather all required financial and contextual data.
+Inputs:
+  Financial statements (Income Statement, Balance Sheet, Cash Flow)
+  Market data (stock prices, industry benchmarks)
+  User query (e.g., “Analyze Apple’s financial performance”)
+  Time period (quarterly, yearly)
+Agent Tasks:
+  Validate input format
+  Normalize data (currency, dates)
+  Handle missing values
+
+2. Data Processing Agent
+Goal: Clean and structure raw data.
+Steps:
+  Remove inconsistencies
+  Convert to structured format (e.g., pandas DataFrame)
+  Standardize metrics (e.g., revenue, EBITDA)
+Output:
+  Clean financial dataset ready for analysis
+
+3. Financial Metrics Computation Agent
+Goal: Calculate key financial indicators.
+Key Metrics:
+  Profitability:
+    Net Profit Margin
+    Gross Margin
+    ROE, ROA
+  Liquidity:
+    Current Ratio
+    Quick Ratio
+  Leverage:
+    Debt-to-Equity Ratio
+  Efficiency:
+    Asset Turnover
+
+4. Trend Analysis Agent
+Goal: Identify patterns over time.
+Tasks:
+  Year-over-year (YoY) growth
+  Quarter-over-quarter (QoQ) trends
+  Detect anomalies or sudden changes
+Optional:
+  Time-series forecasting
+
+5. Benchmarking Agent
+Goal: Compare against industry or competitors.
+Tasks:
+  Compare metrics with:
+  Industry averages
+  Key competitors
+  Rank performance
+
+6. Insight Generation Agent (LLM-powered)
+Goal: Turn numbers into meaningful insights.
+Examples:
+  “Revenue grew 12% YoY driven by increased demand…”
+  “Declining margins indicate rising operational costs…”
+
+7. Risk Assessment Agent
+Goal: Identify financial risks.
+Checks:
+  High debt levels
+  Declining cash flow
+  Volatility in earnings
+  Market risks
+
+8. Report Generation Agent
+Goal: Produce a structured, human-readable report.
+Sections:
+  Executive Summary
+  Financial Overview
+  Key Metrics
+  Trend Analysis
+  Benchmark Comparison
+  Risks & Opportunities
+  Conclusion
+Formats:
+  PDF
+  HTML dashboard
+  Markdown / text
+
+9. Visualization Agent (Optional)
+Goal: Enhance understanding with visuals.
+Charts:
+  Revenue trends (line chart)
+  Profit margins (bar chart)
+  Ratio comparisons
+
+10. Output Delivery Agent
+Goal: Deliver the report.
+Options:
+  Downloadable file
+  Web dashboard
+  API response
+
+Implementation Stack
+  Data Processing: pandas, NumPy
+  LLM Models: Hugging Face (t5-small, flan-t5, etc.)
+  Pipelines: transformers pipeline API
+  Visualization: matplotlib / Plotly
+  Backend: Python (Flask / FastAPI)
+  UI (Optional): Qt (fits your current C++ GUI work)
