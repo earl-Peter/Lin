@@ -1,75 +1,132 @@
-def preprocess(data_trend, train_ratio, n_past):
-    
-    scaler = StandardScaler() 
-    data_trend = scaler.fit_transform(data_trend)
-    
-    train_ind = int(len(data_trend)*train_ratio)
-    train_data = data_trend[:train_ind]
-    val_data = data_trend[train_ind:]
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
-    # convert our train data into a pytorch tensor
-    X_train, Y_train = create_sequences(train_data, n_past)
-    X_val, Y_val = create_sequences(val_data, n_past)
+public class testUI extends JFrame {
+    private JTextField jTextField1;
+    private JTextField jTextField2;
+    private JTextField jTextField3;
+    private JComboBox<String> comboBox;
+    private JLabel jLabel1, jLabel2, jLabel3, jLabel4;
+    private JPanel jp1, jp2, jp3, jp4, jp5;
+    private JButton jb1, jb2;
 
-    return X_train, Y_train, X_val, Y_val, scaler
+    public testUI() {
+        setTitle("Credit Memo UI");
+        setSize(500, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(10, 10));
 
+        initComponents();
 
-def create_sequences(data, n_past):
-    X,Y = [],[]
-    L = len(data)
-    for i in range(L-(n_past+5)):
-        X.append(data[i:i+n_past])
-        Y.append(data[i+n_past:i+n_past+5][:,3])
-    
-    return torch.Tensor(np.array(X)), torch.Tensor(np.array(Y))
+        setupLayout();
 
-data = df[[c for c in df.columns if c not in ['Date','Adj Close']]].values
-X_train, Y_train, X_val, Y_val, scaler = preprocess(data, train_ratio, n_past)
+        addEventListeners();
+    }
 
-batch_size = 32
-train_set = torch.utils.data.TensorDataset(X_train, Y_train)
-train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False)
+    private void initComponents() {
+        jLabel1 = new JLabel("APID:");
+        jLabel2 = new JLabel("Product Package ID:");
+        jLabel3 = new JLabel("Language Preference:");
+        jLabel4 = new JLabel("Narrative Sections:");
 
-val_set = torch.utils.data.TensorDataset(X_val, Y_val)
-val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size, shuffle=False)
+        jTextField1 = new JTextField(15);
+        jTextField2 = new JTextField(15);
+        jTextField3 = new JTextField(15);
 
-class LSTM(nn.Module):
-    def __init__(self, n_features, hidden_dim):
-        super(LSTM, self).__init__()
-        self.n_features = n_features
-        self.hidden_dim = hidden_dim
-        
-        self.lstm = nn.LSTM(input_size=self.n_features, hidden_size=self.hidden_dim, 
-                            num_layers=2, bidirectional=False, batch_first=True, dropout=0.2)
-        self.linear = nn.Linear(self.hidden_dim, 5)
-        
-    def forward(self, x): 
-        x, _ = self.lstm(x)
-        x = self.linear(x[:,-1,:]) 
-        
-        return x
+        String[] options = {"Industry Risk", "Businesses Risk", "Financial Performance"};
+        comboBox = new JComboBox<>(options);
 
-model = LSTM(5, 128)
-model
+        jb1 = new JButton("OK");
+        jb2 = new JButton("Cancel");
 
-close_price_true, close_price_pred = [], []
-for i in range(len(val_set)):
-    x,y = val_set[i]
-    x = torch.unsqueeze(x,0)
-    y = torch.unsqueeze(y,0)
-    pred = model(x.to(device))
-    
-    np_output = pred.detach().numpy()[0]
-    np_target = y[0][0].item()
-    np_output = np.sqrt(scaler.var_[3])*np_output + scaler.mean_[3] #dim=3為close price的
-    np_target = np.sqrt(scaler.var_[3])*np_target + scaler.mean_[3]
-    
-    close_price_true.append(np_target)
-    close_price_pred.append(np_output[0])
- 
-mape = np.mean(np.absolute(np.array(close_price_true) - np.array(close_price_pred))/np.array(close_price_true))
-mae =  np.mean( np.absolute(np.array(close_price_true) - np.array(close_price_pred)))
-plt.plot(close_price_true)
-plt.plot(close_price_pred)
-plt.title('MAE:{:.3f}, MAPE:{:.3f}'.format(mae, mape))
-plt.legend(['true', 'predict'])
+        jp1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        jp2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        jp3 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        jp4 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        jp5 = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 5));
+    }
+
+    private void setupLayout() {
+        jp1.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 20));
+        jp2.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 20));
+        jp3.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 20));
+        jp4.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 20));
+
+        jp1.add(jLabel1);
+        jp1.add(jTextField1);
+
+        jp2.add(jLabel2);
+        jp2.add(jTextField2);
+
+        jp3.add(jLabel3);
+        jp3.add(jTextField3);
+
+        jp4.add(jLabel4);
+        jp4.add(comboBox);
+
+        jp5.add(jb1);
+        jp5.add(jb2);
+
+        JPanel centerPanel = new JPanel(new GridLayout(4, 1, 5, 5));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        centerPanel.add(jp1);
+        centerPanel.add(jp2);
+        centerPanel.add(jp3);
+        centerPanel.add(jp4);
+
+        add(centerPanel, BorderLayout.CENTER);
+        add(jp5, BorderLayout.SOUTH);
+    }
+
+    private void addEventListeners() {
+        jb1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                handleSubmit();
+            }
+        });
+
+        jb2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                handleReset();
+            }
+        });
+    }
+
+    private void handleSubmit() {
+        String apid = jTextField1.getText();
+        String packageID = jTextField2.getText();
+        String language = jTextField3.getText();
+        String sections = (String) comboBox.getSelectedItem();
+
+        String message = String.format("Loading");
+        JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void handleReset() {
+        jTextField1.setText("");
+        jTextField2.setText("");
+        jTextField3.setText("");
+        comboBox.setSelectedIndex(0);
+        jTextField1.requestFocus();
+    }
+
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new testUI().setVisible(true);
+            }
+        });
+    }
+}
